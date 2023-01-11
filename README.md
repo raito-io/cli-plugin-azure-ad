@@ -1,0 +1,1 @@
+# cli-plugin-azure-ad
