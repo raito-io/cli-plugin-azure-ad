@@ -1,0 +1,38 @@
+name: Raito CLI - Azure Active Directory Plugin - Build
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+          cache: true
+
+      - name: Mod Tidy
+        run: go mod tidy
+
+      - name: Build
+        run: make build
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.48.0
+
+      - name: Test
+        run: make test
+        env:
+
+      - uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
