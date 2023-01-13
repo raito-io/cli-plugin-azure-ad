@@ -1,6 +1,6 @@
 module github.com/raito-io/cli-plugin-azure-ad
 
-go 1.18
+go 1.19
 
 require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0
