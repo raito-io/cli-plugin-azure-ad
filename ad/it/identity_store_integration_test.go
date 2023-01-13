@@ -31,7 +31,28 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	//Then
 	s.NoError(err)
 
-	s.True(len(identityHandler.Users) >= 3)
+	s.True(len(identityHandler.Users) > 3)
+	s.True(len(identityHandler.Groups) >= 3)
 
-	s.Empty(identityHandler.Groups)
+	group := ""
+
+	for _, user := range identityHandler.Users {
+		if user.Email == "gill.bates@raito.io" {
+			s.Equal(1, len(user.GroupExternalIds))
+			group = user.GroupExternalIds[0]
+			break
+		}
+	}
+
+	s.NotEqual("", group)
+
+	found := false
+	for _, g := range identityHandler.Groups {
+		if g.ExternalId == group {
+			found = true
+			s.Equal("Engineering", g.Name)
+		}
+	}
+
+	s.True(found)
 }

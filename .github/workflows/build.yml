@@ -31,6 +31,9 @@ jobs:
       - name: Test
         run: make test
         env:
+          AD_TENANTID: ${{ secrets.ad_tenantid }}
+          AD_CLIENTID: ${{ secrets.ad_clientid }}
+          AD_SECRET: ${{ secrets.ad_secret }}
 
       - uses: codecov/codecov-action@v2
         with:
