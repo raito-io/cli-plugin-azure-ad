@@ -143,9 +143,10 @@ func (s *IdentityStoreSyncer) getGroupMembers(url string, members []string) ([]s
 }
 
 func (s *IdentityStoreSyncer) processGroup(row map[string]interface{}) error {
-	logger.Info("Processing group")
-
 	id := row["id"]
+
+	logger.Debug(fmt.Sprintf("Processing group %q", id.(string)))
+
 	name := row["displayName"]
 
 	group := is.Group{
@@ -177,7 +178,7 @@ func (s *IdentityStoreSyncer) processGroup(row map[string]interface{}) error {
 func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
 	id := row["id"]
 
-	logger.Info(fmt.Sprintf("Processing user %q", id.(string)))
+	logger.Debug(fmt.Sprintf("Processing user %q", id.(string)))
 
 	userName := row["userPrincipalName"]
 	name := row["displayName"]
@@ -202,13 +203,11 @@ func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
 		user.GroupExternalIds = pl
 	}
 
-	logger.Info("Try adding user")
 	err := s.identityHandler.AddUsers(&user)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error while adding user %q: %w", user.Name, err))
+		logger.Error(fmt.Sprintf("error while adding user %q: %s", user.Name, err.Error()))
 		return err
 	}
-	logger.Info("Added user")
 
 	return nil
 }
@@ -293,7 +292,7 @@ func (s *IdentityStoreSyncer) fetchJSONData(url string) (map[string]interface{},
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error while requesting to url %q: %w", url, err))
+		logger.Error(fmt.Sprintf("error while requesting to url %q: %s", url, err.Error()))
 		return nil, err
 	}
 
@@ -303,8 +302,9 @@ func (s *IdentityStoreSyncer) fetchJSONData(url string) (map[string]interface{},
 	byteValue, _ := io.ReadAll(body)
 	var result map[string]interface{}
 	err = json.Unmarshal(byteValue, &result)
+
 	if err != nil {
-		logger.Error(fmt.Sprintf("error while parsing result from url %q: %w ... %s", url, err, string(byteValue)))
+		logger.Error(fmt.Sprintf("error while parsing result from url %q: %s ... %s", url, err.Error(), string(byteValue)))
 	}
 
 	return result, err
