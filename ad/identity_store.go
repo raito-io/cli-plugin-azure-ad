@@ -27,12 +27,12 @@ func NewIdentityStoreSyncer() *IdentityStoreSyncer {
 	return &IdentityStoreSyncer{}
 }
 
-func (s *IdentityStoreSyncer) GetIdentityStoreMetaData() is.MetaData {
+func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*is.MetaData, error) {
 	logger.Debug("Returning meta data for Azure Active Directory identity store")
 
-	return is.MetaData{
+	return &is.MetaData{
 		Type: "azure-ad",
-	}
+	}, nil
 }
 
 func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHandler wrappers.IdentityStoreIdentityHandler, configMap *config.ConfigMap) error {
@@ -239,32 +239,32 @@ func (s *IdentityStoreSyncer) processData(url string, processElement func(map[st
 	return err
 }
 
-func (s *IdentityStoreSyncer) getAccessToken(params map[string]interface{}) (string, error) {
+func (s *IdentityStoreSyncer) getAccessToken(params map[string]string) (string, error) {
 	secret := params[AdSecret]
 
-	if secret == nil {
+	if secret == "" {
 		return "", e.CreateMissingInputParameterError(AdSecret)
 	}
 
 	clientId := params[AdClientId]
 
-	if secret == nil {
+	if secret == "" {
 		return "", e.CreateMissingInputParameterError(AdClientId)
 	}
 
 	tenantId := params[AdTenantId]
 
-	if secret == nil {
+	if secret == "" {
 		return "", e.CreateMissingInputParameterError(AdTenantId)
 	}
 
 	// Initializing the client credential
-	cred, err := confidential.NewCredFromSecret(secret.(string))
+	cred, err := confidential.NewCredFromSecret(secret)
 	if err != nil {
 		return "", fmt.Errorf("could not create a credential from a secret: %w", err)
 	}
 
-	app, err := confidential.New(clientId.(string), cred, confidential.WithAuthority("https://login.microsoftonline.com/"+tenantId.(string)))
+	app, err := confidential.New(clientId, cred, confidential.WithAuthority("https://login.microsoftonline.com/"+tenantId))
 	if err != nil {
 		return "", fmt.Errorf("could not connect to Microsoft login: %w", err)
 	}

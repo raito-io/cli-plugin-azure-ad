@@ -21,10 +21,10 @@ func main() {
 
 	err := base.RegisterPlugins(wrappers.IdentityStoreSync(ad.NewIdentityStoreSyncer()),
 		&info.InfoImpl{
-			Info: plugin.PluginInfo{
+			Info: &plugin.PluginInfo{
 				Name:    "Azure Active Directory",
 				Version: plugin.ParseVersion(version),
-				Parameters: []plugin.ParameterInfo{
+				Parameters: []*plugin.ParameterInfo{
 					{Name: "ad-tenantid", Description: "The tenant ID for Azure Active Directory", Mandatory: true},
 					{Name: "ad-clientid", Description: "The client ID for Azure Active Directory", Mandatory: true},
 					{Name: "ad-secret", Description: "The secret to connect to Azure Active Directory", Mandatory: true},
