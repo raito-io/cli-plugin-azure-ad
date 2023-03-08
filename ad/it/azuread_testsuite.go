@@ -29,7 +29,7 @@ func readDatabaseConfig() *config.ConfigMap {
 	}
 
 	return &config.ConfigMap{
-		Parameters: map[string]interface{}{
+		Parameters: map[string]string{
 			ad.AdTenantId: adTenantId,
 			ad.AdClientId: adClientId,
 			ad.AdSecret:   adSecret,
