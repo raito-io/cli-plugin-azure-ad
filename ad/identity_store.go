@@ -31,7 +31,9 @@ func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*is
 	logger.Debug("Returning meta data for Azure Active Directory identity store")
 
 	return &is.MetaData{
-		Type: "azure-ad",
+		Type:        "azure-ad",
+		CanBeLinked: true,
+		CanBeMaster: true,
 	}, nil
 }
 
