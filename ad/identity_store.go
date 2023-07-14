@@ -18,9 +18,15 @@ const startUsersURL = "https://graph.microsoft.com/v1.0/users/"
 const startGroupsURL = "https://graph.microsoft.com/v1.0/groups/"
 
 type IdentityStoreSyncer struct {
-	parents         map[string]map[string]struct{}
-	accessToken     string
-	identityHandler wrappers.IdentityStoreIdentityHandler
+	parents     map[string]map[string]struct{}
+	accessToken string
+}
+
+var IdentityCache *IdentityContainer = nil
+
+type IdentityContainer struct {
+	Users  []*is.User
+	Groups []*is.Group
 }
 
 func NewIdentityStoreSyncer() *IdentityStoreSyncer {
@@ -39,11 +45,47 @@ func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*is
 
 func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHandler wrappers.IdentityStoreIdentityHandler, configMap *config.ConfigMap) error {
 	s.parents = make(map[string]map[string]struct{})
-	s.identityHandler = identityHandler
 
-	accessToken, err := s.getAccessToken(configMap.Parameters)
+	container, err := s.GetIdentityContainer(ctx, configMap.Parameters)
+
+	logger.Error(fmt.Sprintf("%+v", len(container.Users)))
+	logger.Error(fmt.Sprintf("%+v", len(container.Groups)))
 	if err != nil {
-		return fmt.Errorf("unable to fetch access token: %w", err)
+		return err
+	}
+
+	err = identityHandler.AddGroups(container.Groups...)
+
+	if err != nil {
+		logger.Error(fmt.Sprintf("error while adding groups: %s", err.Error()))
+		return err
+	}
+
+	err = identityHandler.AddUsers(container.Users...)
+
+	if err != nil {
+		logger.Error(fmt.Sprintf("error while adding users: %s", err.Error()))
+		return err
+	}
+
+	return nil
+
+}
+
+func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params map[string]string) (*IdentityContainer, error) {
+	if IdentityCache != nil {
+		return IdentityCache, nil
+	}
+
+	if s.parents == nil {
+		s.parents = make(map[string]map[string]struct{})
+	}
+
+	IdentityCache = &IdentityContainer{Users: make([]*is.User, 0), Groups: make([]*is.Group, 0)}
+
+	accessToken, err := s.getAccessToken(params)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch access token: %w", err)
 	}
 
 	s.accessToken = accessToken
@@ -52,22 +94,24 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 
 	err = s.buildParentsMap()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logger.Info(fmt.Sprintf("Built parent map (size %d)", len(s.parents)))
 
 	err = s.processData(startGroupsURL, s.processGroup)
 	if err != nil {
-		return fmt.Errorf("error while processing groups: %w", err)
+		IdentityCache = nil
+		return nil, fmt.Errorf("error while processing groups: %w", err)
 	}
 
 	err = s.processData(startUsersURL, s.processUser)
 	if err != nil {
-		return fmt.Errorf("error while processing users: %w", err)
+		IdentityCache = nil
+		return nil, fmt.Errorf("error while processing users: %w", err)
 	}
 
-	return nil
+	return IdentityCache, nil
 }
 
 func (s *IdentityStoreSyncer) buildParentsMap() error {
@@ -169,10 +213,7 @@ func (s *IdentityStoreSyncer) processGroup(row map[string]interface{}) error {
 		group.ParentGroupExternalIds = pl
 	}
 
-	err := s.identityHandler.AddGroups(&group)
-	if err != nil {
-		return err
-	}
+	IdentityCache.Groups = append(IdentityCache.Groups, &group)
 
 	return nil
 }
@@ -205,11 +246,7 @@ func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
 		user.GroupExternalIds = pl
 	}
 
-	err := s.identityHandler.AddUsers(&user)
-	if err != nil {
-		logger.Error(fmt.Sprintf("error while adding user %q: %s", user.Name, err.Error()))
-		return err
-	}
+	IdentityCache.Users = append(IdentityCache.Users, &user)
 
 	return nil
 }
@@ -266,7 +303,7 @@ func (s *IdentityStoreSyncer) getAccessToken(params map[string]string) (string, 
 		return "", fmt.Errorf("could not create a credential from a secret: %w", err)
 	}
 
-	app, err := confidential.New(clientId, cred, confidential.WithAuthority("https://login.microsoftonline.com/"+tenantId))
+	app, err := confidential.New("https://login.microsoftonline.com/"+tenantId, clientId, cred)
 	if err != nil {
 		return "", fmt.Errorf("could not connect to Microsoft login: %w", err)
 	}
