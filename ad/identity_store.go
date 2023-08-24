@@ -50,6 +50,7 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 
 	logger.Error(fmt.Sprintf("%+v", len(container.Users)))
 	logger.Error(fmt.Sprintf("%+v", len(container.Groups)))
+
 	if err != nil {
 		return err
 	}
@@ -69,7 +70,6 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 	}
 
 	return nil
-
 }
 
 func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params map[string]string) (*IdentityContainer, error) {
