@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0
 	github.com/hashicorp/go-hclog v1.5.0
-	github.com/raito-io/cli v0.42.0
+	github.com/raito-io/cli v0.45.0
 	github.com/stretchr/testify v1.8.3
 	github.com/vektra/mockery/v2 v2.27.1
 )

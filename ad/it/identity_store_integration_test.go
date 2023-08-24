@@ -22,7 +22,7 @@ func TestIdentityStoreTestSuite(t *testing.T) {
 
 func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	//Given
-	identityHandler := mocks.NewSimpleIdentityStoreIdentityHandler(s.T(), 1)
+	identityHandler := mocks.NewSimpleIdentityStoreIdentityHandler(s.T(), 25)
 	identityStoreSyncer := ad.NewIdentityStoreSyncer()
 
 	//When
