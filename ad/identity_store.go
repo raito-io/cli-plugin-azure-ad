@@ -48,9 +48,6 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 
 	container, err := s.GetIdentityContainer(ctx, configMap.Parameters)
 
-	logger.Error(fmt.Sprintf("%+v", len(container.Users)))
-	logger.Error(fmt.Sprintf("%+v", len(container.Groups)))
-
 	if err != nil {
 		return err
 	}
