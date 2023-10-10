@@ -6,9 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/raito-io/cli-plugin-azure-ad/ad"
 	"github.com/raito-io/cli/base/wrappers/mocks"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/raito-io/cli-plugin-azure-ad/ad"
 )
 
 type IdentityStoreTestSuite struct {
@@ -22,7 +23,7 @@ func TestIdentityStoreTestSuite(t *testing.T) {
 
 func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	//Given
-	identityHandler := mocks.NewSimpleIdentityStoreIdentityHandler(s.T(), 25)
+	identityHandler := mocks.NewSimpleIdentityStoreIdentityHandler(s.T(), 27)
 	identityStoreSyncer := ad.NewIdentityStoreSyncer()
 
 	//When
