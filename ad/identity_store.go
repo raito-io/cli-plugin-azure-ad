@@ -33,7 +33,7 @@ func NewIdentityStoreSyncer() *IdentityStoreSyncer {
 	return &IdentityStoreSyncer{}
 }
 
-func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(ctx context.Context) (*is.MetaData, error) {
+func (s *IdentityStoreSyncer) GetIdentityStoreMetaData(_ context.Context, _ *config.ConfigMap) (*is.MetaData, error) {
 	logger.Debug("Returning meta data for Azure Active Directory identity store")
 
 	return &is.MetaData{
