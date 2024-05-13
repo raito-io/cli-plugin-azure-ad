@@ -7,9 +7,9 @@ toolchain go1.22.0
 require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/raito-io/cli v0.64.1
+	github.com/raito-io/cli v0.65.1
 	github.com/stretchr/testify v1.9.0
-	github.com/vektra/mockery/v2 v2.42.2
+	github.com/vektra/mockery/v2 v2.42.3
 )
 
 require (
@@ -21,7 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.5 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.5 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.36.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.5 // indirect
