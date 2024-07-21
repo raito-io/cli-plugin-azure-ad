@@ -9,13 +9,23 @@ import (
 
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
 	is "github.com/raito-io/cli/base/identity_store"
+	"github.com/raito-io/cli/base/tag"
 	"github.com/raito-io/cli/base/util/config"
 	e "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/base/wrappers"
 )
 
-const startUsersURL = "https://graph.microsoft.com/v1.0/users/"
+const startUsersURL = "https://graph.microsoft.com/v1.0/users/?$select=displayName,jobTitle,mail,officeLocation,userPrincipalName,id,department"
 const startGroupsURL = "https://graph.microsoft.com/v1.0/groups/"
+
+const tagSource = "Azure Entra ID"
+
+// This can be made configurable in the future
+var userTags = map[string]string{
+	"department":     "Department",
+	"jobTitle":       "JobTitle",
+	"officeLocation": "OfficeLocation",
+}
 
 type IdentityStoreSyncer struct {
 	parents     map[string]map[string]struct{}
@@ -233,6 +243,16 @@ func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
 		user.Email = mail.(string)
 	} else {
 		user.Email = ""
+	}
+
+	for field, tagKey := range userTags {
+		if value, ok := row[field]; ok && value != nil && value != "" {
+			user.Tags = append(user.Tags, &tag.Tag{
+				Key:    tagKey,
+				Value:  value.(string),
+				Source: tagSource,
+			})
+		}
 	}
 
 	if parents, f := s.parents[id.(string)]; f {

@@ -38,9 +38,20 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	group := ""
 
 	for _, user := range identityHandler.Users {
-		if user.Email == "gill.bates@raito.io" {
+		if user.Email == "c_harris@raito.io" {
 			s.Equal(1, len(user.GroupExternalIds))
 			group = user.GroupExternalIds[0]
+
+			s.Len(user.Tags, 2)
+			for _, tag := range user.Tags {
+				if tag.Key == "Department" {
+					s.Equal("Marketing", tag.Value)
+				} else if tag.Key == "JobTitle" {
+					s.Equal("Data Governance Lead", tag.Value)
+				} else {
+					s.Fail("Unexpected tag")
+				}
+			}
 			break
 		}
 	}
@@ -51,7 +62,7 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	for _, g := range identityHandler.Groups {
 		if g.ExternalId == group {
 			found = true
-			s.Equal("Engineering", g.Name)
+			s.Equal("Marketing", g.Name)
 		}
 	}
 
