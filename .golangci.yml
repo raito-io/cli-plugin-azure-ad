@@ -24,7 +24,8 @@ linters-settings:
       - paramTypeCombine
 
   govet:
-    check-shadowing: true
+    enable:
+      - shadow
 
   revive:
     rules:
@@ -54,14 +55,45 @@ linters-settings:
     ignored-functions:
       - 'math.*' # Magic number generation, should be fixed and removed?
 
+  cyclop:
+    max-complexity: 20
+    skip-tests: true
+    package-average: 0.0
+
+  errorlint:
+    errorf: true
+    errorf-multi: true
+    asserts: true
+    comparison: true
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  wrapcheck:
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      - go-multierror.Append(
+
 linters:
   disable-all: true
   enable:
+    - asasalint
     - bodyclose
-    - deadcode
+    # - cyclop #To be enabled in the future
+    #- depguard #We should create a correct config to enabe depguard
     - dogsled
     - dupl
+    - dupword
+    - durationcheck
     - errcheck
+    - errorlint
     - exportloopref
     - exhaustive
     - forbidigo
@@ -70,28 +102,27 @@ linters:
     - gofmt
     - goimports
     #- gomnd # Magic numbers should be fixed and enable gomnd,
-    #- gocyclo
+    - gocyclo
     - gosec
     - gosimple
     - govet
     - ineffassign
     - misspell
+    - nilerr
     - nolintlint
     - nakedret
     - prealloc
     - predeclared
     - revive
     - staticcheck
-    - structcheck
     - stylecheck
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
-    - varcheck
+    - unused
     - whitespace
-    # - wrapcheck # 3th party errors should be wrapped to not lose context
     - wsl
 
 run:
@@ -101,7 +132,6 @@ run:
 output:
   path-prefix: ""
   sort-results: true
-  format: tab
   print-issued-lines: false
   print-linter-name: true
   uniq-by-line: false

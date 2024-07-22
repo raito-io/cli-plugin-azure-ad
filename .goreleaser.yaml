@@ -1,3 +1,5 @@
+version: 2
+
 project_name: cli-plugin-azure-ad
 before:
   hooks:
@@ -22,3 +24,5 @@ archives:
   -
     format: 'tar.gz'
     name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}_{{ .Arch }}'
+release:
+  prerelease: auto
