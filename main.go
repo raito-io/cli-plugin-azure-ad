@@ -29,6 +29,7 @@ func main() {
 					{Name: "ad-clientid", Description: "The client ID for Azure Active Directory", Mandatory: true},
 					{Name: "ad-secret", Description: "The secret to connect to Azure Active Directory", Mandatory: true},
 				},
+				Type: []plugin.PluginType{plugin.PluginType_PLUGIN_TYPE_IS_SYNC},
 			},
 		})
 
