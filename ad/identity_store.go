@@ -356,6 +356,11 @@ func (s *IdentityStoreSyncer) fetchJSONData(url string) (map[string]interface{},
 	defer body.Close()
 
 	byteValue, _ := io.ReadAll(body)
+
+	if logger.IsDebug() {
+		logger.Debug(fmt.Sprintf("Got response from: %s", string(byteValue)))
+	}
+
 	var result map[string]interface{}
 	err = json.Unmarshal(byteValue, &result)
 
