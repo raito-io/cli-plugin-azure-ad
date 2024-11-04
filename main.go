@@ -28,6 +28,7 @@ func main() {
 					{Name: "ad-tenantid", Description: "The tenant ID for Azure Active Directory", Mandatory: true},
 					{Name: "ad-clientid", Description: "The client ID for Azure Active Directory", Mandatory: true},
 					{Name: "ad-secret", Description: "The secret to connect to Azure Active Directory", Mandatory: true},
+					{Name: ad.AdGroupsFilter, Description: "A comma-separated list of group IDs. When set, only users in these groups are considered.", Mandatory: false},
 				},
 				Type: []plugin.PluginType{plugin.PluginType_PLUGIN_TYPE_IS_SYNC},
 			},

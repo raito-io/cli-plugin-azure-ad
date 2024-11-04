@@ -4,6 +4,7 @@ package it
 
 import (
 	"context"
+	"sort"
 	"testing"
 
 	"github.com/raito-io/cli/base/wrappers/mocks"
@@ -67,4 +68,55 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync() {
 	}
 
 	s.True(found)
+}
+
+func (s *IdentityStoreTestSuite) TestIdentityStoreSync_GroupFilter() {
+	//Given
+	identityHandler := mocks.NewSimpleIdentityStoreIdentityHandler(s.T(), 27)
+	identityStoreSyncer := ad.NewIdentityStoreSyncer()
+
+	//When
+	configMap := s.getConfig()
+	configMap.Parameters[ad.AdGroupsFilter] = "08025b48-4886-42b3-a3ea-d772a4267f8d" // Engineering group
+	err := identityStoreSyncer.SyncIdentityStore(context.Background(), identityHandler, configMap)
+
+	//Then
+	s.NoError(err)
+
+	s.True(len(identityHandler.Users) < 4)
+	s.Len(identityHandler.Groups, 2)
+
+	var groupNames []string
+	var eGroupId, deGroupId string
+
+	for _, group := range identityHandler.Groups {
+		groupNames = append(groupNames, group.Name)
+
+		if group.Name == "Data Engineering" {
+			deGroupId = group.ExternalId
+			s.Len(group.ParentGroupExternalIds, 1)
+		} else {
+			eGroupId = group.ExternalId
+			s.Len(group.ParentGroupExternalIds, 0)
+		}
+	}
+
+	sort.Strings(groupNames)
+	s.ElementsMatch([]string{"Data Engineering", "Engineering"}, groupNames)
+
+	var userEmails []string
+
+	for _, user := range identityHandler.Users {
+		userEmails = append(userEmails, user.Email)
+		s.Len(user.GroupExternalIds, 1)
+
+		if user.Email == "b_stewart@raito.io" {
+			s.Equal(deGroupId, user.GroupExternalIds[0])
+		} else {
+			s.Equal(eGroupId, user.GroupExternalIds[0])
+		}
+	}
+
+	sort.Strings(userEmails)
+	s.ElementsMatch([]string{"b_stewart@raito.io", "gill.bates@raito.io", "n_nguyen@raito.io"}, userEmails)
 }

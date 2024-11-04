@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
 	is "github.com/raito-io/cli/base/identity_store"
@@ -13,8 +14,10 @@ import (
 	"github.com/raito-io/cli/base/util/config"
 	e "github.com/raito-io/cli/base/util/error"
 	"github.com/raito-io/cli/base/wrappers"
+	"github.com/raito-io/golang-set/set"
 )
 
+const startTransitiveMembersURL = "https://graph.microsoft.com/v1.0/groups/{groupId}/transitiveMembers?$select=displayName,jobTitle,mail,officeLocation,userPrincipalName,id,department,description"
 const startUsersURL = "https://graph.microsoft.com/v1.0/users/?$select=displayName,jobTitle,mail,officeLocation,userPrincipalName,id,department"
 const startGroupsURL = "https://graph.microsoft.com/v1.0/groups/"
 
@@ -28,11 +31,11 @@ var userTags = map[string]string{
 }
 
 type IdentityStoreSyncer struct {
-	parents     map[string]map[string]struct{}
-	accessToken string
+	parents       map[string]map[string]struct{}
+	accessToken   string
+	identityCache *IdentityContainer
+	handledUsers  set.Set[string]
 }
-
-var IdentityCache *IdentityContainer = nil
 
 type IdentityContainer struct {
 	Users  []*is.User
@@ -80,15 +83,15 @@ func (s *IdentityStoreSyncer) SyncIdentityStore(ctx context.Context, identityHan
 }
 
 func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params map[string]string) (*IdentityContainer, error) {
-	if IdentityCache != nil {
-		return IdentityCache, nil
+	if s.identityCache != nil {
+		return s.identityCache, nil
 	}
 
 	if s.parents == nil {
 		s.parents = make(map[string]map[string]struct{})
 	}
 
-	IdentityCache = &IdentityContainer{Users: make([]*is.User, 0), Groups: make([]*is.Group, 0)}
+	s.identityCache = &IdentityContainer{Users: make([]*is.User, 0), Groups: make([]*is.Group, 0)}
 
 	accessToken, err := s.getAccessToken(params)
 	if err != nil {
@@ -99,26 +102,92 @@ func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params m
 
 	logger.Info("Fetched access token for Azure AD")
 
-	err = s.buildParentsMap()
-	if err != nil {
-		return nil, err
+	groupsFilter := params[AdGroupsFilter]
+	strings.TrimSpace(groupsFilter)
+
+	if groupsFilter != "" { // Filtered on groups
+		s.handledUsers = set.NewSet[string]()
+		groups := strings.Split(groupsFilter, ",")
+
+		for _, group := range groups {
+			// First fetching the group members of this group itself
+			err = s.handleGroupMembers(group)
+			if err != nil {
+				s.identityCache = nil
+				return nil, fmt.Errorf("error while processing users in group %q: %w", group, err)
+			}
+
+			// Then fetching the group members for all the groups underneath this group
+			startURL := strings.Replace(startTransitiveMembersURL, "{groupId}", group, 1)
+
+			err = s.processData(startURL, s.buildFilteredParentsMap) // Groups and users are handled together
+			if err != nil {
+				s.identityCache = nil
+				return nil, fmt.Errorf("error while processing users in group %q: %w", group, err)
+			}
+		}
+
+		logger.Info(fmt.Sprintf("Built parent map (size %d)", len(s.parents)))
+
+		s.handledUsers = set.NewSet[string]()
+
+		for _, group := range groups {
+			// First handle the group itself.
+			err = s.processSingleGroup(group)
+
+			if err != nil {
+				s.identityCache = nil
+				return nil, fmt.Errorf("error while processing group %q: %w", group, err)
+			}
+
+			// Now handling all entities underneath the group
+			startURL := strings.Replace(startTransitiveMembersURL, "{groupId}", group, 1)
+
+			err = s.processData(startURL, s.processFilteredEntity) // Groups and users are handled together
+			if err != nil {
+				s.identityCache = nil
+				return nil, fmt.Errorf("error while processing users in group %q: %w", group, err)
+			}
+		}
+	} else { // Or the unfiltered version
+		err = s.buildParentsMap()
+		if err != nil {
+			return nil, err
+		}
+
+		logger.Info(fmt.Sprintf("Built parent map (size %d)", len(s.parents)))
+
+		err = s.processData(startGroupsURL, s.processGroup)
+		if err != nil {
+			s.identityCache = nil
+			return nil, fmt.Errorf("error while processing groups: %w", err)
+		}
+
+		err = s.processData(startUsersURL, s.processUser)
+		if err != nil {
+			s.identityCache = nil
+			return nil, fmt.Errorf("error while processing users: %w", err)
+		}
 	}
 
-	logger.Info(fmt.Sprintf("Built parent map (size %d)", len(s.parents)))
+	return s.identityCache, nil
+}
 
-	err = s.processData(startGroupsURL, s.processGroup)
-	if err != nil {
-		IdentityCache = nil
-		return nil, fmt.Errorf("error while processing groups: %w", err)
+func (s *IdentityStoreSyncer) buildFilteredParentsMap(row map[string]interface{}) error {
+	id := row["id"]
+
+	// First check if we didn't already handle this user.
+	if s.handledUsers.Contains(id.(string)) {
+		return nil
 	}
 
-	err = s.processData(startUsersURL, s.processUser)
-	if err != nil {
-		IdentityCache = nil
-		return nil, fmt.Errorf("error while processing users: %w", err)
+	s.handledUsers.Add(id.(string))
+
+	if row["@odata.type"] == "#microsoft.graph.group" {
+		return s.handleGroupMembers(id.(string))
 	}
 
-	return IdentityCache, nil
+	return nil // Ignoring other types
 }
 
 func (s *IdentityStoreSyncer) buildParentsMap() error {
@@ -138,24 +207,9 @@ func (s *IdentityStoreSyncer) buildParentsMapForGroups(url string) error {
 			id, f := row["id"]
 
 			if f && id != nil {
-				parentId := id.(string)
-				members := make([]string, 0, 20)
-				members, err = s.getGroupMembers("https://graph.microsoft.com/v1.0/groups/"+parentId+"/members?$select=id", members)
-
+				err = s.handleGroupMembers(id.(string))
 				if err != nil {
 					return err
-				}
-
-				for _, m := range members {
-					mm, f := s.parents[m]
-					if !f {
-						mm = map[string]struct{}{}
-						s.parents[m] = mm
-					}
-
-					if _, f := mm[parentId]; !f {
-						mm[parentId] = struct{}{}
-					}
 				}
 			}
 		}
@@ -167,6 +221,29 @@ func (s *IdentityStoreSyncer) buildParentsMapForGroups(url string) error {
 	}
 
 	return err
+}
+
+func (s *IdentityStoreSyncer) handleGroupMembers(parentId string) error {
+	members := make([]string, 0, 20)
+	members, err := s.getGroupMembers("https://graph.microsoft.com/v1.0/groups/"+parentId+"/members?$select=id", members)
+
+	if err != nil {
+		return err
+	}
+
+	for _, m := range members {
+		mm, f := s.parents[m]
+		if !f {
+			mm = map[string]struct{}{}
+			s.parents[m] = mm
+		}
+
+		if _, f := mm[parentId]; !f {
+			mm[parentId] = struct{}{}
+		}
+	}
+
+	return nil
 }
 
 func (s *IdentityStoreSyncer) getGroupMembers(url string, members []string) ([]string, error) {
@@ -220,9 +297,37 @@ func (s *IdentityStoreSyncer) processGroup(row map[string]interface{}) error {
 		group.ParentGroupExternalIds = pl
 	}
 
-	IdentityCache.Groups = append(IdentityCache.Groups, &group)
+	s.identityCache.Groups = append(s.identityCache.Groups, &group)
 
 	return nil
+}
+
+func (s *IdentityStoreSyncer) processSingleGroup(group string) error {
+	result, err := s.fetchJSONData(startGroupsURL + "/" + group)
+	if err != nil {
+		return err
+	}
+
+	return s.processGroup(result)
+}
+
+func (s *IdentityStoreSyncer) processFilteredEntity(row map[string]interface{}) error {
+	id := row["id"]
+
+	// First check if we didn't already handle this user.
+	if s.handledUsers.Contains(id.(string)) {
+		return nil
+	}
+
+	s.handledUsers.Add(id.(string))
+
+	if row["@odata.type"] == "#microsoft.graph.user" {
+		return s.processUser(row)
+	} else if row["@odata.type"] == "#microsoft.graph.group" {
+		return s.processGroup(row)
+	}
+
+	return nil // Ignoring other types
 }
 
 func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
@@ -263,7 +368,7 @@ func (s *IdentityStoreSyncer) processUser(row map[string]interface{}) error {
 		user.GroupExternalIds = pl
 	}
 
-	IdentityCache.Users = append(IdentityCache.Users, &user)
+	s.identityCache.Users = append(s.identityCache.Users, &user)
 
 	return nil
 }
