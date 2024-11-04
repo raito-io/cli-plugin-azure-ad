@@ -110,6 +110,8 @@ func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params m
 		groups := strings.Split(groupsFilter, ",")
 
 		for _, group := range groups {
+			group = strings.TrimSpace(group)
+
 			// First fetching the group members of this group itself
 			err = s.handleGroupMembers(group)
 			if err != nil {
@@ -132,6 +134,8 @@ func (s *IdentityStoreSyncer) GetIdentityContainer(ctx context.Context, params m
 		s.handledUsers = set.NewSet[string]()
 
 		for _, group := range groups {
+			group = strings.TrimSpace(group)
+
 			// First handle the group itself.
 			err = s.processSingleGroup(group)
 

@@ -77,17 +77,17 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync_GroupFilter() {
 
 	//When
 	configMap := s.getConfig()
-	configMap.Parameters[ad.AdGroupsFilter] = "08025b48-4886-42b3-a3ea-d772a4267f8d" // Engineering group
+	configMap.Parameters[ad.AdGroupsFilter] = "08025b48-4886-42b3-a3ea-d772a4267f8d, 440c6b86-de14-461e-943a-172c9d4e03fa" // Engineering group
 	err := identityStoreSyncer.SyncIdentityStore(context.Background(), identityHandler, configMap)
 
 	//Then
 	s.NoError(err)
 
-	s.True(len(identityHandler.Users) < 4)
-	s.Len(identityHandler.Groups, 2)
+	s.Len(identityHandler.Users, 5)
+	s.Len(identityHandler.Groups, 3)
 
 	var groupNames []string
-	var eGroupId, deGroupId string
+	var eGroupId, deGroupId, hrGroupId string
 
 	for _, group := range identityHandler.Groups {
 		groupNames = append(groupNames, group.Name)
@@ -95,14 +95,17 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync_GroupFilter() {
 		if group.Name == "Data Engineering" {
 			deGroupId = group.ExternalId
 			s.Len(group.ParentGroupExternalIds, 1)
-		} else {
+		} else if group.Name == "Engineering" {
 			eGroupId = group.ExternalId
+			s.Len(group.ParentGroupExternalIds, 0)
+		} else if group.Name == "Human Resources" {
+			hrGroupId = group.ExternalId
 			s.Len(group.ParentGroupExternalIds, 0)
 		}
 	}
 
 	sort.Strings(groupNames)
-	s.ElementsMatch([]string{"Data Engineering", "Engineering"}, groupNames)
+	s.ElementsMatch([]string{"Data Engineering", "Engineering", "Human Resources"}, groupNames)
 
 	var userEmails []string
 
@@ -112,11 +115,13 @@ func (s *IdentityStoreTestSuite) TestIdentityStoreSync_GroupFilter() {
 
 		if user.Email == "b_stewart@raito.io" {
 			s.Equal(deGroupId, user.GroupExternalIds[0])
+		} else if user.Email == "a_ahmad@raito.io" || user.Email == "m_carissa@raito.io" {
+			s.Equal(hrGroupId, user.GroupExternalIds[0])
 		} else {
 			s.Equal(eGroupId, user.GroupExternalIds[0])
 		}
 	}
 
 	sort.Strings(userEmails)
-	s.ElementsMatch([]string{"b_stewart@raito.io", "gill.bates@raito.io", "n_nguyen@raito.io"}, userEmails)
+	s.ElementsMatch([]string{"a_ahmad@raito.io", "b_stewart@raito.io", "gill.bates@raito.io", "m_carissa@raito.io", "n_nguyen@raito.io"}, userEmails)
 }
