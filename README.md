@@ -31,7 +31,7 @@ To use this plugin, you will need
    1. You'll need the Tenant ID of your directory
    2. Under 'App registrations', set up a new application for this integration. You'll need the Application (client) ID.
    3. In the newly created application go to 'Certificates & secrets' to create a new client secret 
-   4. In the newly created application go to 'API Permissions' and make sure the application has the permissions `Group.Read.All`, `User.Export.All`, `User.Read` and `User.Read.All`. Make sure these are approved. To do this, go to the 'Enterprise applications' menu in your AD Directory, find your application and go to 'Permissions'. 
+   4. In the newly created application go to 'API Permissions' and make sure the application has the following permissions: `Group.Read.All`, `User.Read` and `User.Read.All`. Make sure these are approved and are of type `Application`. To do this, go to the 'Enterprise applications' menu in your AD Directory, find your application and go to 'Permissions'. 
 
 ## Usage
 To use the plugin, add the following snippet to your Raito CLI configuration file (`raito.yml`, by default) under the `targets` section:

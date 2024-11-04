@@ -307,7 +307,7 @@ func (s *IdentityStoreSyncer) processGroup(row map[string]interface{}) error {
 }
 
 func (s *IdentityStoreSyncer) processSingleGroup(group string) error {
-	result, err := s.fetchJSONData(startGroupsURL + "/" + group)
+	result, err := s.fetchJSONData(startGroupsURL + group)
 	if err != nil {
 		return err
 	}
