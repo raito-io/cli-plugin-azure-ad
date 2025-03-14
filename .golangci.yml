@@ -94,7 +94,7 @@ linters:
     - durationcheck
     - errcheck
     - errorlint
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - forbidigo
     - goconst
@@ -134,4 +134,3 @@ output:
   sort-results: true
   print-issued-lines: false
   print-linter-name: true
-  uniq-by-line: false
