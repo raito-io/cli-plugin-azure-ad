@@ -7,10 +7,10 @@ toolchain go1.24.0
 tool github.com/vektra/mockery/v2
 
 require (
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.5.0
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/raito-io/cli v0.71.1
-	github.com/stretchr/testify v1.10.0
+	github.com/raito-io/cli v0.72.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.51.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.52.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.6.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
-	github.com/hasura/go-graphql-client v0.13.1 // indirect
+	github.com/hasura/go-graphql-client v0.14.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
